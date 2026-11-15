@@ -9,6 +9,8 @@ jobs:
   android:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -30,6 +32,19 @@ jobs:
           path: |
             app/build/outputs/apk/debug/*.apk
             wear/build/outputs/apk/debug/*.apk
+
+      - name: Publish debug APKs to the "debug-latest" release (main branch only)
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/debug/app-debug.apk release/todo-planner-phone-debug.apk
+          cp wear/build/outputs/apk/debug/wear-debug.apk release/todo-planner-wear-debug.apk
+          gh release delete debug-latest --cleanup-tag --yes || true
+          gh release create debug-latest release/*.apk --prerelease --target "$GITHUB_SHA" \
+            --title "Latest debug build" \
+            --notes "Debug APKs built from ${GITHUB_SHA::7}. Install todo-planner-phone-debug.apk on your phone (allow installs from unknown sources). The Wear APK is for a paired Wear OS watch."
 
       - name: Lint
         run: ./gradlew --stacktrace :app:lintDebug :wear:lintDebug
