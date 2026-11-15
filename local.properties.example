@@ -1,0 +1,14 @@
+# Copy to local.properties (git-ignored). Android Studio fills in sdk.dir automatically.
+sdk.dir=/path/to/Android/Sdk
+
+# AI planner backend (see backend/README section in the main README). Leave empty to ship without AI;
+# users can also set the URL in Settings -> AI planner.
+#   Emulator + local backend: http://10.0.2.2:8787   (debug builds only allow plain HTTP to this host)
+#   Device + adb reverse:     http://localhost:8787
+#   Production:               https://planner.example.com
+AI_BACKEND_URL=
+
+# Optional shared token if the backend sets APP_SHARED_TOKEN. This is NOT a provider API key -
+# provider keys stay on the server. Anyone with the APK can extract it, so treat it as a rate-limit
+# gate, not a secret.
+AI_APP_TOKEN=
