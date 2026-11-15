@@ -61,7 +61,7 @@ class TaskRepository(
     ) { t, l, s, o -> AppData(t, l, s, o) }
 
     suspend fun snapshot(): AppData = AppData(
-        db.tasks().getAll(), db.lists().getAll(), db.subtasks().getAll().filterNot { it.deleted }, db.occurrences().getAll(),
+        db.tasks().getAll(), db.lists().getAll(), db.subtasks().getAllIncludingDeleted().filterNot { it.deleted }, db.occurrences().getAll(),
     )
 
     suspend fun task(id: String): TaskEntity? = db.tasks().get(id)?.takeUnless { it.deleted }
