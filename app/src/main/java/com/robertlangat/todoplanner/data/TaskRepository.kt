@@ -150,25 +150,27 @@ class TaskRepository(
                 writeTask(updated, draft)
                 // If the start date or rule changed, drop completion rows that no longer match an occurrence.
                 if (current.rrule != null) pruneOrphanCompletions(updated)
-            } else if (scope == EditScope.THIS_OCCURRENCE) {
-                editSingleOccurrence(current, rule, occurrence, draft)
             } else {
-                editThisAndFuture(current, rule, start, occurrence, draft)
+                // The editor shows the series' start date. If the user left it alone, the edited copy
+                // keeps this occurrence's own date; if they changed it, their date wins.
+                val target = draft.dueDate?.takeIf { it != start } ?: occurrence
+                if (scope == EditScope.THIS_OCCURRENCE) editSingleOccurrence(current, rule, occurrence, draft, target)
+                else editThisAndFuture(current, rule, start, occurrence, draft, target)
             }
         }
         onChanged(false)
     }
 
-    private suspend fun editSingleOccurrence(current: TaskEntity, rule: RecurrenceRule, occurrence: LocalDate, draft: TaskDraft) {
+    private suspend fun editSingleOccurrence(current: TaskEntity, rule: RecurrenceRule, occurrence: LocalDate, draft: TaskDraft, target: LocalDate) {
         db.tasks().upsert(current.copy(rrule = rule.withExDate(occurrence).format(), version = version(), deviceId = device()))
-        val single = draft.copy(rule = null, dueDate = draft.dueDate ?: occurrence)
+        val single = draft.copy(rule = null, dueDate = target)
         val newId = UUID.randomUUID().toString()
         val wasDone = db.occurrences().forTask(current.id).any { it.completed && it.date == occurrence.toEpochDay() }
         writeTask(newTaskEntity(newId, single, seriesParentId = current.id).copy(completed = wasDone), single, copySubtaskIds = false)
         moveCompletions(current.id, null, setOf(occurrence))
     }
 
-    private suspend fun editThisAndFuture(current: TaskEntity, rule: RecurrenceRule, start: LocalDate, occurrence: LocalDate, draft: TaskDraft) {
+    private suspend fun editThisAndFuture(current: TaskEntity, rule: RecurrenceRule, start: LocalDate, occurrence: LocalDate, draft: TaskDraft, target: LocalDate) {
         val (oldRule, newRule) = RecurrenceEngine.split(start, rule, occurrence)
         if (oldRule == null) {
             val updated = current.applyDraft(draft).copy(version = version(), deviceId = device())
@@ -177,7 +179,7 @@ class TaskRepository(
             return
         }
         db.tasks().upsert(current.copy(rrule = oldRule.format(), version = version(), deviceId = device()))
-        val newStart = draft.dueDate ?: occurrence
+        val newStart = target
         // Keep the split end (UNTIL/COUNT remainder) unless the user changed the repeat pattern itself.
         val futureRule = draft.rule?.let { if (it.copy(end = rule.end, exDates = rule.exDates) == rule) newRule else it }
         val future = draft.copy(dueDate = newStart, rule = futureRule)
@@ -344,9 +346,11 @@ class TaskRepository(
     /** Moves a one-off task, or a single occurrence of a recurring task, to [newDate] (null = undated). */
     suspend fun reschedule(taskId: String, occurrence: LocalDate?, newDate: LocalDate?) {
         val t = db.tasks().get(taskId) ?: return
-        if (t.rrule != null && occurrence != null) {
-            val draft = draftOf(t).copy(dueDate = newDate ?: occurrence, rule = null)
-            update(taskId, draft, EditScope.THIS_OCCURRENCE, occurrence)
+        val rule = t.rule
+        if (rule != null && occurrence != null) {
+            val draft = draftOf(t).copy(rule = null)
+            db.withTransaction { editSingleOccurrence(t, rule, occurrence, draft, newDate ?: occurrence) }
+            onChanged(false)
         } else {
             db.tasks().upsert(
                 t.copy(

@@ -92,6 +92,8 @@ class RepositoryInstrumentedTest {
         val slots = alarms.map { it.occurrenceDate to it.key.substringAfter('#') }
         assertEquals(slots.size, slots.toSet().size)
         assertEquals(3, data.tasks.size)
+        // The single-occurrence copy keeps that occurrence's date when the start date wasn't changed.
+        assertEquals(today.plusDays(1), data.tasks.single { it.title == "Moved once" }.dueLocalDate)
     }
 
     @Test fun syncedDeletionStaysDeleted() = runBlocking {
