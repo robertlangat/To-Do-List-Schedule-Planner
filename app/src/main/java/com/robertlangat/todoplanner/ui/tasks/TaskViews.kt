@@ -83,7 +83,7 @@ object TaskViews {
 
             TaskView.Today -> {
                 val todays = data.occurrencesBetween(today, today)
-                val overdue = data.occurrencesBetween(today.minusDays(30), today.minusDays(1)).filter { !it.completed }
+                val overdue = latestMissedPerTask(data.occurrencesBetween(today.minusDays(30), today.minusDays(1)).filter { !it.completed })
                 val f = filters.copy(status = StatusFilter.ALL)
                 val showDone = filters.status != StatusFilter.OPEN
                 listOfNotNull(
@@ -113,9 +113,18 @@ object TaskViews {
         }
     }
 
+    /**
+     * A repeating task appears once in Overdue (its most recent missed day), so a missed daily habit
+     * doesn't flood the list. Each occurrence still counts separately in progress stats.
+     */
+    fun latestMissedPerTask(items: List<TaskOccurrence>): List<TaskOccurrence> {
+        val (recurring, oneOffs) = items.partition { it.isRecurring }
+        return oneOffs + recurring.groupBy { it.task.id }.values.map { group -> group.maxBy { it.date ?: LocalDate.MIN } }
+    }
+
     /** Focus view: up to three open tasks for today/overdue, highest priority first. */
     fun focus(data: AppData, today: LocalDate): List<TaskOccurrence> {
-        val due = (data.occurrencesBetween(today.minusDays(30), today)).filter { !it.completed }
+        val due = latestMissedPerTask(data.occurrencesBetween(today.minusDays(30), today).filter { !it.completed })
         val undatedImportant = data.tasks.filter { it.dueDate == null && !it.completed && (it.priority >= 2 || it.starred) }
             .map { data.occurrence(it, null) }
         return (due + undatedImportant)

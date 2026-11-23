@@ -38,6 +38,8 @@ class TaskViewsTest {
         val sections = TaskViews.build(TaskView.Today, data, today, "", Filters())
         val byTitle = sections.associate { it.title to it.items.map { o -> o.task.id } }
         assertTrue("late" in byTitle.getValue("Overdue"))
+        // the daily task missed on 5 days shows up once
+        assertEquals(1, byTitle.getValue("Overdue").count { it == "daily" })
         assertEquals(listOf("today"), byTitle.getValue("Today"))
         assertEquals(setOf("done", "daily"), byTitle.getValue("Done today").toSet())
     }
