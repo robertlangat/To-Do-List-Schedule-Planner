@@ -66,6 +66,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.robertlangat.todoplanner.BuildConfig
 import com.robertlangat.todoplanner.container
 import com.robertlangat.todoplanner.data.ReminderSound
@@ -273,7 +274,7 @@ fun SettingsScreen(settings: Settings, onClose: () -> Unit, onMessage: (String) 
             Section("Backup file")
             Text("Save or load a backup file using Android's file picker (no storage permission needed).", style = MaterialTheme.typography.bodySmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { exportLauncher.launch("todo-planner-backup-${LocalDate.now()}.json") }) { Text("Export") }
+                OutlinedButton(onClick = { exportLauncher.launch("things-to-do-next-backup-${LocalDate.now()}.json") }) { Text("Export") }
                 OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }) { Text("Import") }
             }
 
@@ -289,6 +290,14 @@ fun SettingsScreen(settings: Settings, onClose: () -> Unit, onMessage: (String) 
                 keyboardActions = KeyboardActions(onDone = { scope.launch { c.settings.setAiBackendUrl(aiUrl); onMessage("AI backend saved") } }),
             )
             if (aiUrl != settings.aiBackendUrl) TextButton(onClick = { scope.launch { c.settings.setAiBackendUrl(aiUrl); onMessage("AI backend saved") } }) { Text("Save URL") }
+
+            Section("Ads and privacy")
+            Text("This app is free and shows ads from Google AdMob. Your tasks are never sent to advertisers.",
+                style = MaterialTheme.typography.bodySmall)
+            val privacyRequired by c.ads.privacyOptionsRequired.collectAsStateWithLifecycle()
+            if (privacyRequired) {
+                OutlinedButton(onClick = { (context as? Activity)?.let { c.ads.showPrivacyOptions(it) } }) { Text("Ad privacy options") }
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text("Version ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

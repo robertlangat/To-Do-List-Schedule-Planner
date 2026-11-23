@@ -98,7 +98,13 @@ fun offsetLabel(minutes: Int): String = when {
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun TaskEditorScreen(lists: List<ListEntity>, onClose: () -> Unit, onMessage: (String) -> Unit, vm: EditorViewModel = viewModel()) {
+fun TaskEditorScreen(
+    lists: List<ListEntity>,
+    onClose: () -> Unit,
+    onMessage: (String) -> Unit,
+    onSaved: () -> Unit = onClose,
+    vm: EditorViewModel = viewModel(),
+) {
     val state by vm.state.collectAsStateWithLifecycle()
     val d = state.draft
     val context = LocalContext.current
@@ -122,7 +128,10 @@ fun TaskEditorScreen(lists: List<ListEntity>, onClose: () -> Unit, onMessage: (S
     }
 
     LaunchedEffect(state.done) {
-        if (state.done) { state.error?.let(onMessage); onClose() }
+        if (state.done) {
+            val err = state.error
+            if (err != null) { onMessage(err); onClose() } else onSaved()
+        }
     }
 
     Scaffold(

@@ -30,6 +30,11 @@ android {
 
         buildConfigField("String", "AI_BACKEND_URL", "\"${cfg("AI_BACKEND_URL")}\"")
         buildConfigField("String", "AI_APP_TOKEN", "\"${cfg("AI_APP_TOKEN")}\"")
+
+        // AdMob. The app ID is not secret (it ships in every APK).
+        manifestPlaceholders["admobAppId"] = "ca-app-pub-8306955081407788~5196832723"
+        buildConfigField("String", "ADMOB_BANNER_ID", "\"ca-app-pub-8306955081407788/1308277343\"")
+        buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"ca-app-pub-8306955081407788/1257587713\"")
     }
 
     buildTypes {
@@ -40,6 +45,12 @@ android {
         }
         debug {
             // Same applicationId as release and the Wear module so the Data Layer pairs them.
+            // Debug builds show Google's official TEST ads so testing can never count as invalid
+            // traffic on the real AdMob account. Build with -PrealAds=true to use the real units.
+            if (!(project.findProperty("realAds")?.toString()?.toBoolean() ?: false)) {
+                buildConfigField("String", "ADMOB_BANNER_ID", "\"ca-app-pub-3940256099942544/9214589741\"")
+                buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
+            }
         }
     }
 
@@ -98,6 +109,8 @@ dependencies {
 
     implementation(libs.play.services.auth)
     implementation(libs.play.services.wearable)
+    implementation(libs.play.services.ads)
+    implementation(libs.ump)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
 

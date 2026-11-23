@@ -43,8 +43,8 @@ jobs:
           cp wear/build/outputs/apk/debug/wear-debug.apk release/todo-planner-wear-debug.apk
           gh release delete debug-latest --cleanup-tag --yes || true
           gh release create debug-latest release/*.apk --prerelease --target "$GITHUB_SHA" \
-            --title "Latest debug build" \
-            --notes "Debug APKs built from ${GITHUB_SHA::7}. Install todo-planner-phone-debug.apk on your phone (allow installs from unknown sources). The Wear APK is for a paired Wear OS watch."
+            --title "Things to Do Next Planner - latest debug build" \
+            --notes "Debug APKs built from ${GITHUB_SHA::7} (debug builds show Google test ads). Install todo-planner-phone-debug.apk on your phone (allow installs from unknown sources). The Wear APK is for a paired Wear OS watch."
 
       - name: Lint
         run: ./gradlew --stacktrace :app:lintDebug :wear:lintDebug

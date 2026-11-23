@@ -1,4 +1,4 @@
-# To-Do List – Schedule Planner
+# Things to Do Next Planner
 
 A native Android to-do list and schedule planner built with Kotlin, Jetpack Compose and Material 3.
 It works fully offline (Room is the source of truth). It also has a home-screen widget, an
@@ -64,7 +64,8 @@ offline planner and an optional AI planner, optional Google Drive sync, and a We
 | `POST_NOTIFICATIONS` | Show reminders (Android 13+) | When you add a reminder or turn reminders on |
 | `SCHEDULE_EXACT_ALARM` | On-time reminders | Never forced. Settings offers "Allow exact reminders"; without it, reminders are approximate. |
 | `RECEIVE_BOOT_COMPLETED` | Restore reminders after reboot | Install time (normal permission) |
-| `INTERNET` | Drive sync and AI planner | Install time (normal permission) |
+| `INTERNET` | Drive sync, AI planner and ads | Install time (normal permission) |
+| `AD_ID` (added by the ads SDK) | Advertising ID for AdMob | Install time (normal permission) |
 
 The app requests **no** storage, calendar or microphone permissions:
 - Backups use the system file picker (`CreateDocument` / `OpenDocument`).
@@ -151,6 +152,30 @@ Request and response contract: see the comments at the top of `backend/server.mj
 model output. The app validates again (clamps durations, drops untitled items, re-checks
 overlaps). Timeouts and errors show a message and an **Use offline planner** button, and your
 tasks are never touched.
+
+## AdMob ads
+
+| | ID |
+|---|---|
+| App ID | `ca-app-pub-8306955081407788~5196832723` (in the manifest via `manifestPlaceholders`) |
+| Banner | `ca-app-pub-8306955081407788/1308277343` |
+| Interstitial | `ca-app-pub-8306955081407788/1257587713` |
+
+- **Debug builds show Google's test ads** (labelled "Test Ad"), so testing never counts as
+  invalid traffic on your AdMob account. Release builds use the real units. To try the real units
+  in a debug build, run `./gradlew :app:assembleDebug -PrealAds=true`, and never tap your own
+  live ads. Register your phone as a test device in AdMob → Settings → Test devices.
+- **Placement**: an anchored adaptive banner above the bottom navigation on Tasks, Calendar and
+  Mine. Interstitials appear only after you save a task or a plan, at most once every 3 minutes,
+  on every 3rd save, and never in the first minute. There are no ads in the widget, on the watch,
+  at launch or when ticking checkboxes.
+- **Consent**: Google's User Messaging Platform shows the GDPR / US-state consent form where the
+  law requires it, and ads load only after consent allows. Create the message in **AdMob →
+  Privacy & messaging** (European regulations, and US states if you want). When required,
+  Settings shows **Ad privacy options**.
+- **Before publishing**: add `app-ads.txt` to your developer website and link your app in AdMob
+  after it's on Google Play. In Play Console, declare ads and the Advertising ID (`AD_ID`
+  permission, added by the SDK) in the Data safety form.
 
 ## Wear OS testing
 

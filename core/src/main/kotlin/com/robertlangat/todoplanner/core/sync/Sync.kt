@@ -159,7 +159,7 @@ object SnapshotCodec {
     /** Throws [IllegalArgumentException] for unreadable files or snapshots from a newer app. */
     fun decode(text: String): SyncSnapshot {
         val root = runCatching { Json.parse(text).asObject() }.getOrNull()
-            ?: throw IllegalArgumentException("Not a To-Do Planner backup")
+            ?: throw IllegalArgumentException("Not a Things to Do Next Planner backup")
         val schema = root.int("schemaVersion") ?: throw IllegalArgumentException("Missing schemaVersion")
         require(schema <= SyncSnapshot.CURRENT_SCHEMA) {
             "Backup was made by a newer version of the app (schema $schema). Please update."

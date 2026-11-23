@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) launchRequest = parse(intent)
+        container.ads.gatherConsent(this)
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
             TodoTheme(settings.themeMode, settings.accentIndex) {

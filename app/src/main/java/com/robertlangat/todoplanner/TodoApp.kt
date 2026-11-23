@@ -47,6 +47,7 @@ class AppContainer(val context: Context) {
     val driveAuth by lazy { DriveAuth(context, settings) }
     val sync by lazy { SyncManager(context, repository, settings, driveAuth, reminders) }
     val ai by lazy { AiPlannerClient() }
+    val ads by lazy { com.robertlangat.todoplanner.ads.AdsManager(context) }
 
     private data class Change(val fromSync: Boolean)
     private val changes = Channel<Change>(Channel.CONFLATED)

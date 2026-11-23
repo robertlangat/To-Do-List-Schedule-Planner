@@ -79,7 +79,14 @@ private fun flagText(f: DraftFlag) = when (f) {
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun PlannerScreen(settings: Settings, onClose: () -> Unit, onMessage: (String) -> Unit, onOpenSettings: () -> Unit, vm: PlannerViewModel = viewModel()) {
+fun PlannerScreen(
+    settings: Settings,
+    onClose: () -> Unit,
+    onMessage: (String) -> Unit,
+    onOpenSettings: () -> Unit,
+    onSaved: () -> Unit = onClose,
+    vm: PlannerViewModel = viewModel(),
+) {
     val s by vm.state.collectAsStateWithLifecycle()
     var pickDate by remember { mutableStateOf(false) }
     var pickStart by remember { mutableStateOf(false) }
@@ -88,7 +95,7 @@ fun PlannerScreen(settings: Settings, onClose: () -> Unit, onMessage: (String) -
     val voice = rememberVoiceInput(onResult = { t -> vm.update { it.copy(input = (it.input + "\n" + t).trim()) } },
         onUnavailable = { onMessage("Voice input isn't available on this device") })
 
-    LaunchedEffect(s.saved) { s.saved?.let { onMessage("Saved $it task${if (it == 1) "" else "s"} to your schedule"); vm.consumeSaved(); onClose() } }
+    LaunchedEffect(s.saved) { s.saved?.let { onMessage("Saved $it task${if (it == 1) "" else "s"} to your schedule"); vm.consumeSaved(); onSaved() } }
 
     Scaffold(
         topBar = {

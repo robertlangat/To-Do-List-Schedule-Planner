@@ -1,6 +1,11 @@
 package com.robertlangat.todoplanner.ui
 
+import android.app.Activity
 import android.net.Uri
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.platform.LocalContext
+import com.robertlangat.todoplanner.ads.BannerAd
+import com.robertlangat.todoplanner.container
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
@@ -75,6 +80,9 @@ fun AppRoot(vm: MainViewModel, launchRequest: LaunchRequest?, onLaunchHandled: (
     var quickAdd by remember { mutableStateOf(false) }
     var calendarDate by remember { mutableStateOf(LocalDate.now()) }
     var currentList by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val ads = context.container.ads
 
     LaunchedEffect(Unit) {
         vm.messages.collect { m ->
@@ -97,13 +105,16 @@ fun AppRoot(vm: MainViewModel, launchRequest: LaunchRequest?, onLaunchHandled: (
         contentWindowInsets = WindowInsets(0),
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (topLevel) NavigationBar {
+            if (topLevel) Column {
+                BannerAd()
+                NavigationBar {
                 listOf(
                     Triple(Routes.TASKS, "Tasks", Icons.Filled.CheckCircle),
                     Triple(Routes.CALENDAR, "Calendar", Icons.Filled.CalendarMonth),
                     Triple(Routes.MINE, "Mine", Icons.Filled.Person),
                 ).forEach { (r, label, icon) ->
                     NavigationBarItem(selected = route == r, onClick = { nav.navigateTop(r) }, icon = { Icon(icon, null) }, label = { Text(label) })
+                }
                 }
             }
         },
@@ -133,10 +144,17 @@ fun AppRoot(vm: MainViewModel, launchRequest: LaunchRequest?, onLaunchHandled: (
                 Routes.EDITOR,
                 arguments = listOf("taskId", "date", "title", "listId").map { navArgument(it) { type = NavType.StringType; defaultValue = "" } },
             ) {
-                TaskEditorScreen(data.lists, onClose = { nav.popBackStack() }, onMessage = vm::message)
+                TaskEditorScreen(
+                    data.lists, onClose = { nav.popBackStack() }, onMessage = vm::message,
+                    onSaved = { nav.popBackStack(); ads.onNaturalBreak(activity) },
+                )
             }
             composable(Routes.PLANNER) {
-                PlannerScreen(settings, onClose = { nav.popBackStack() }, onMessage = vm::message, onOpenSettings = { nav.navigate(Routes.SETTINGS) })
+                PlannerScreen(
+                    settings, onClose = { nav.popBackStack() }, onMessage = vm::message,
+                    onOpenSettings = { nav.navigate(Routes.SETTINGS) },
+                    onSaved = { nav.popBackStack(); ads.onNaturalBreak(activity) },
+                )
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(settings, onClose = { nav.popBackStack() }, onMessage = vm::message, onAddStarterLists = vm::addStarterLists)

@@ -12,6 +12,8 @@
     <!-- User-granted on Android 12+. If not granted, reminders fall back to approximate timing
          and the Reminders settings say so. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- The Google Mobile Ads SDK also merges in INTERNET, ACCESS_NETWORK_STATE and
+         com.google.android.gms.permission.AD_ID (declare these in Play's Data safety form). -->
 
     <queries>
         <intent>
@@ -89,6 +91,10 @@
                 <data android:scheme="wear" android:host="*" android:pathPrefix="/refresh" />
             </intent-filter>
         </service>
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
 
         <!-- WorkManager initialises itself through App Startup; nothing to declare. -->
     </application>
