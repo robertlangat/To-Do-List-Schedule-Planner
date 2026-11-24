@@ -48,6 +48,8 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           VERSION_NAME: ${{ inputs.version }}
         run: |
+          # Diagnostics without revealing anything: lengths only. Expected base64 length: 3552.
+          echo "keystore secret: $(printf '%s' "$KS" | wc -c) chars ($(printf '%s' "$KS" | tr -cd 'A-Za-z0-9+/=' | wc -c) base64 chars); password secret: $(printf '%s' "$ANDROID_KEYSTORE_PASSWORD" | tr -d '\r\n' | wc -c) chars (expected 24)"
           # Tolerate spaces/line breaks/quotes picked up while pasting the secret.
           printf '%s' "$KS" | tr -cd 'A-Za-z0-9+/=' | base64 --decode > "$RUNNER_TEMP/upload.jks" || {
             echo "::error::ANDROID_KEYSTORE_BASE64 isn't valid base64. Paste the whole contents of ANDROID_KEYSTORE_BASE64.txt again."; exit 1; }
