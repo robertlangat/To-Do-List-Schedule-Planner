@@ -55,7 +55,8 @@ jobs:
             echo "::error::ANDROID_KEYSTORE_BASE64 isn't valid base64. Paste the whole contents of ANDROID_KEYSTORE_BASE64.txt again."; exit 1; }
           export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/upload.jks"
           export ANDROID_KEYSTORE_PASSWORD="$(printf '%s' "$ANDROID_KEYSTORE_PASSWORD" | tr -d '\r\n')"
-          export ANDROID_KEY_PASSWORD="$(printf '%s' "${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}" | tr -d '\r\n')"
+          # PKCS12 keystores use one password for the store and the key.
+          export ANDROID_KEY_PASSWORD="$ANDROID_KEYSTORE_PASSWORD"
           export ANDROID_KEY_ALIAS="$(printf '%s' "${ANDROID_KEY_ALIAS:-upload}" | tr -d ' \r\n')"
           keytool -list -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null || {
             echo "::error::The keystore opened, but the password or alias doesn't match. Re-check ANDROID_KEYSTORE_PASSWORD (from ANDROID_KEYSTORE_PASSWORD.txt) and ANDROID_KEY_ALIAS (upload)."; exit 1; }
