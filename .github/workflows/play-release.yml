@@ -48,8 +48,15 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           VERSION_NAME: ${{ inputs.version }}
         run: |
-          echo "$KS" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          # Tolerate spaces/line breaks/quotes picked up while pasting the secret.
+          printf '%s' "$KS" | tr -cd 'A-Za-z0-9+/=' | base64 --decode > "$RUNNER_TEMP/upload.jks" || {
+            echo "::error::ANDROID_KEYSTORE_BASE64 isn't valid base64. Paste the whole contents of ANDROID_KEYSTORE_BASE64.txt again."; exit 1; }
           export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/upload.jks"
+          export ANDROID_KEYSTORE_PASSWORD="$(printf '%s' "$ANDROID_KEYSTORE_PASSWORD" | tr -d '\r\n')"
+          export ANDROID_KEY_PASSWORD="$(printf '%s' "${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}" | tr -d '\r\n')"
+          export ANDROID_KEY_ALIAS="$(printf '%s' "${ANDROID_KEY_ALIAS:-upload}" | tr -d ' \r\n')"
+          keytool -list -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null || {
+            echo "::error::The keystore opened, but the password or alias doesn't match. Re-check ANDROID_KEYSTORE_PASSWORD (from ANDROID_KEYSTORE_PASSWORD.txt) and ANDROID_KEY_ALIAS (upload)."; exit 1; }
           # versionCode must increase with every upload: phone = even, watch = odd.
           export VERSION_CODE=$(( 100 + GITHUB_RUN_NUMBER * 2 ))
           export WEAR_VERSION_CODE=$(( VERSION_CODE + 1 ))
