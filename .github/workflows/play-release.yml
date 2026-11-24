@@ -1,0 +1,77 @@
+name: Google Play release bundle
+
+# Builds SIGNED release App Bundles (.aab) for the phone app and the Wear OS app, ready to upload
+# in Google Play Console. Run it from the Actions tab. Needs these repository secrets
+# (Settings -> Secrets and variables -> Actions):
+#   ANDROID_KEYSTORE_BASE64   the upload keystore, base64-encoded
+#   ANDROID_KEYSTORE_PASSWORD keystore password
+#   ANDROID_KEY_ALIAS         key alias (upload)
+#   ANDROID_KEY_PASSWORD      key password (same as the keystore password for PKCS12 keystores)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version name shown on Google Play (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+concurrency:
+  group: play-release
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Check secrets
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KS" ] || [ -z "$PW" ]; then echo "::error::Add the ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets first (see the top of this file)."; exit 1; fi
+
+      - name: Build signed bundles
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          VERSION_NAME: ${{ inputs.version }}
+        run: |
+          echo "$KS" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/upload.jks"
+          # versionCode must increase with every upload: phone = even, watch = odd.
+          export VERSION_CODE=$(( 100 + GITHUB_RUN_NUMBER * 2 ))
+          export WEAR_VERSION_CODE=$(( VERSION_CODE + 1 ))
+          ./gradlew --stacktrace :core:test :app:bundleRelease :wear:bundleRelease
+          mkdir -p out
+          cp app/build/outputs/bundle/release/app-release.aab "out/things-to-do-next-${VERSION_NAME}-phone.aab"
+          cp wear/build/outputs/bundle/release/wear-release.aab "out/things-to-do-next-${VERSION_NAME}-wear.aab"
+          cp app/build/outputs/mapping/release/mapping.txt "out/mapping-phone-${VERSION_NAME}.txt"
+          jarsigner -verify -certs "out/things-to-do-next-${VERSION_NAME}-phone.aab" | tail -1
+          echo "phone versionCode $VERSION_CODE, watch versionCode $WEAR_VERSION_CODE" | tee out/versions.txt
+          rm -f "$RUNNER_TEMP/upload.jks"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: play-bundles-${{ inputs.version }}
+          path: out/
+
+      - name: Publish to a GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="android-v${{ inputs.version }}-${{ github.run_number }}"
+          gh release create "$TAG" out/* --prerelease --target "$GITHUB_SHA" \
+            --title "Android ${{ inputs.version }} for Google Play (build ${{ github.run_number }})" \
+            --notes "Signed release App Bundles. Upload the -phone.aab to your Play Console release; upload the -wear.aab under the Wear OS form factor. mapping-phone.txt is for crash deobfuscation (App bundle explorer -> Downloads)."

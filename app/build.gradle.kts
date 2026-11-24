@@ -16,16 +16,31 @@ val localProps = Properties().apply {
 fun cfg(name: String, default: String = ""): String =
     (localProps.getProperty(name) ?: System.getenv(name) ?: default).replace("\"", "\\\"")
 
+// Release signing (Play upload key). Provided by CI secrets or local.properties; never committed.
+val releaseStoreFile: String? = System.getenv("ANDROID_KEYSTORE_PATH") ?: localProps.getProperty("RELEASE_STORE_FILE")
+
 android {
     namespace = "com.robertlangat.todoplanner"
+
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: localProps.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: localProps.getProperty("RELEASE_KEY_ALIAS") ?: "upload"
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: localProps.getProperty("RELEASE_KEY_PASSWORD") ?: storePassword
+            }
+        }
+    }
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.robertlangat.todoplanner"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        // CI passes VERSION_CODE / VERSION_NAME for Play uploads; every upload needs a higher code.
+        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "AI_BACKEND_URL", "\"${cfg("AI_BACKEND_URL")}\"")
@@ -39,6 +54,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

@@ -46,6 +46,9 @@ jobs:
             --title "Things to Do Next Planner - latest debug build" \
             --notes "Debug APKs built from ${GITHUB_SHA::7} (debug builds show Google test ads). Install todo-planner-phone-debug.apk on your phone (allow installs from unknown sources). The Wear APK is for a paired Wear OS watch."
 
+      - name: Release build check (R8 shrinking; unsigned here)
+        run: ./gradlew --stacktrace :app:bundleRelease :wear:bundleRelease
+
       - name: Lint
         run: ./gradlew --stacktrace :app:lintDebug :wear:lintDebug
 

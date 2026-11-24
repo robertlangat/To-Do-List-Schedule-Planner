@@ -6,8 +6,21 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val releaseStoreFile: String? = System.getenv("ANDROID_KEYSTORE_PATH")
+
 android {
     namespace = "com.robertlangat.todoplanner.wear"
+
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "upload"
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: storePassword
+            }
+        }
+    }
     compileSdk = 36
 
     defaultConfig {
@@ -15,12 +28,14 @@ android {
         applicationId = "com.robertlangat.todoplanner"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        // Must differ from the phone app's versionCode (same Play listing): phone uses even, watch odd.
+        versionCode = (System.getenv("WEAR_VERSION_CODE") ?: "2").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
