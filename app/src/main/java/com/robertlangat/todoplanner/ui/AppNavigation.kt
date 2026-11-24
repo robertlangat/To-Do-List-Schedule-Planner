@@ -100,6 +100,15 @@ fun AppRoot(vm: MainViewModel, launchRequest: LaunchRequest?, onLaunchHandled: (
         if (launchRequest != null) onLaunchHandled()
     }
 
+    LaunchedEffect(Unit) {
+        when (com.robertlangat.todoplanner.ScreenshotMode.scene) {
+            "calendar" -> nav.navigateTop(Routes.CALENDAR)
+            "mine" -> nav.navigateTop(Routes.MINE)
+            "planner" -> nav.navigate(Routes.PLANNER)
+            "editor" -> com.robertlangat.todoplanner.ScreenshotMode.reportId?.let { nav.navigate(Routes.editor(it)) }
+        }
+    }
+
     val topLevel = route in setOf(Routes.TASKS, Routes.CALENDAR, Routes.MINE)
     Scaffold(
         contentWindowInsets = WindowInsets(0),

@@ -92,7 +92,9 @@ fun TasksScreen(
     var searching by rememberSaveable { mutableStateOf(false) }
     var filters by remember { mutableStateOf(Filters()) }
     var showFilters by remember { mutableStateOf(false) }
-    var focusMode by rememberSaveable(settings.focusModeDefault) { mutableStateOf(settings.focusModeDefault) }
+    var focusMode by rememberSaveable(settings.focusModeDefault) {
+        mutableStateOf(settings.focusModeDefault || com.robertlangat.todoplanner.ScreenshotMode.scene == "focus")
+    }
     var newList by remember { mutableStateOf(false) }
     var editList by remember { mutableStateOf<String?>(null) }
     val actionState = remember { TaskActionState() }

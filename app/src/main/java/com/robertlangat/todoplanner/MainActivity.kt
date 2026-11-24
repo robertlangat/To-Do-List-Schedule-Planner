@@ -31,10 +31,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) launchRequest = parse(intent)
-        container.ads.gatherConsent(this)
+        ScreenshotMode.scene = intent?.getStringExtra("ScreenshotScene")
+        if (ScreenshotMode.isOn) {
+            // CI screenshot mode only: demo data, no ads/consent prompts.
+            kotlinx.coroutines.runBlocking { ScreenshotMode.seedIfEmpty(container) }
+        } else {
+            container.ads.gatherConsent(this)
+        }
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
-            TodoTheme(settings.themeMode, settings.accentIndex) {
+            TodoTheme(settings.themeMode, if (ScreenshotMode.isOn) 1 else settings.accentIndex) {
                 AppRoot(vm, launchRequest, onLaunchHandled = { launchRequest = null })
             }
         }

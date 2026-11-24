@@ -95,6 +95,12 @@ fun PlannerScreen(
     val voice = rememberVoiceInput(onResult = { t -> vm.update { it.copy(input = (it.input + "\n" + t).trim()) } },
         onUnavailable = { onMessage("Voice input isn't available on this device") })
 
+    LaunchedEffect(Unit) {
+        if (com.robertlangat.todoplanner.ScreenshotMode.scene == "planner" && s.draft == null) {
+            vm.update { it.copy(input = com.robertlangat.todoplanner.ScreenshotMode.PLANNER_PROMPT, includeUndated = false) }
+            vm.planOffline()
+        }
+    }
     LaunchedEffect(s.saved) { s.saved?.let { onMessage("Saved $it task${if (it == 1) "" else "s"} to your schedule"); vm.consumeSaved(); onSaved() } }
 
     Scaffold(
